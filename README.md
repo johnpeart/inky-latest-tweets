@@ -1,4 +1,4 @@
-# Inky Twitter
+# Inky Latest Tweets
 
 This app displays tweets on an e-ink display attached to a Raspberry Pi.
 
