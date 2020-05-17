@@ -143,7 +143,7 @@ for twitterUsername, twitterDisplayname in accounts.items():
         return statuses[0].full_text
     if __name__ == "__main__":
         latest_tweet = displayTweets(twitterUsername)
-        reflowed_latest_tweet = reflow_text(latest_tweet[0], displayWidth, tweetFont)
+        reflowed_latest_tweet = reflow_text(latest_tweet, displayWidth, tweetFont)
         startDraw = startDraw + headerHeight + headerPadding
         draw.text((0, startDraw), twitterDisplayname, yellow, accountFont)
         accountTextWidth, accountTextHeight = accountFont.getsize(twitterDisplayname)
