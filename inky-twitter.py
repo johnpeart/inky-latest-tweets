@@ -5,6 +5,7 @@
 
 import sys # This module provides access to some variables used or maintained by the interpreter and to functions that interact strongly with the interpreter. It is always available.
 import datetime # The datetime module supplies classes for manipulating dates and times.
+import argparse # Enables you to pass arguments through terminal
 
 # Third party modules
 
@@ -13,6 +14,12 @@ import twitter # This module handles interactions with the Twitter Developer API
 from accounts import accounts # This module stores a list of accounts to check
 from PIL import Image, ImageFont, ImageDraw # This module handles creation of images and text, which are sent to the display
 from inky import InkyWHAT # This module makes the e-ink display work and renders the image
+
+# Command line arguments to set display type and colour, and enter your name
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--test', '-t', type=bool, required=False, choices=[True], help="Set to 'true' to output to local PNG instead of to the display")
+args = parser.parse_args()
 
 ##################################################
 ## IMPORT THE TWITTER DEVELOPER API CREDENTIALS ##
@@ -32,7 +39,8 @@ api = twitter.Api(
     consumer_key = keys.twitter["consumer_key"],
     consumer_secret = keys.twitter["consumer_secret"],
     access_token_key = keys.twitter["access_token_key"],
-    access_token_secret = keys.twitter["access_token_secret"]
+    access_token_secret = keys.twitter["access_token_secret"],
+    tweet_mode= 'extended'
 )
 
 ##################################
@@ -45,7 +53,26 @@ api = twitter.Api(
 
 inky = InkyWHAT("yellow")
 
-img = Image.new("P", (inky.WIDTH, inky.HEIGHT))
+###################
+## SET VARIABLES ##
+###################
+
+test = args.test
+
+if test == True:
+    yellow = "#9B870C"
+    white = "#ffffff"
+    black = "#000000"
+    displayHeight = 300
+    displayWidth = 400
+else:
+    yellow = inky.YELLOW
+    white = inky.WHITE
+    black = inky.BLACK
+    displayHeight = inky.HEIGHT
+    displayWidth = inky.WIDTH
+
+img = Image.new("P", (displayWidth, displayHeight))
 draw = ImageDraw.Draw(img)
 
 #################
@@ -84,10 +111,10 @@ tweetFontSize = 16
 accountFontSize = 16
 updateFont = 12
 
-headerFont = ImageFont.truetype("/home/pi/inky-twitter/fonts/iAWriterMonoS-Bold.ttf", headerFontSize)
-tweetFont = ImageFont.truetype("/home/pi/inky-twitter/fonts/iAWriterMonoS-Regular.ttf", tweetFontSize)
-accountFont = ImageFont.truetype("/home/pi/inky-twitter/fonts/iAWriterMonoS-Bold.ttf", accountFontSize)
-updateFont = ImageFont.truetype("/home/pi/inky-twitter/fonts/iAWriterMonoS-Bold.ttf", updateFont)
+headerFont = ImageFont.truetype("fonts/Bold.ttf", headerFontSize)
+tweetFont = ImageFont.truetype("fonts/Regular.ttf", tweetFontSize)
+accountFont = ImageFont.truetype("fonts/Bold.ttf", accountFontSize)
+updateFont = ImageFont.truetype("fonts/Bold.ttf", updateFont)
 
 ###########################
 ## ADD BACKGROUND STYLES ##
@@ -96,10 +123,11 @@ updateFont = ImageFont.truetype("/home/pi/inky-twitter/fonts/iAWriterMonoS-Bold.
 headerText = "Latest tweets"
 headerTextWidth, headerTextHeight = headerFont.getsize(headerText)
 headerPadding = 5
-headerWidth, headerHeight = inky.WIDTH, headerTextHeight + (headerPadding * 2)
+headerWidth, headerHeight = displayWidth, headerTextHeight + (headerPadding * 2)
 
-ImageDraw.Draw(img).rectangle([(0, 0), (headerWidth, headerHeight)], fill = inky.YELLOW, outline=None)
-draw.text((headerPadding, headerPadding), headerText, inky.WHITE, headerFont)
+ImageDraw.Draw(img).rectangle([(0, 0), (displayWidth, displayHeight)], fill = white, outline=None)
+ImageDraw.Draw(img).rectangle([(0, 0), (headerWidth, headerHeight)], fill = yellow, outline=None)
+draw.text((headerPadding, headerPadding), headerText, white, headerFont)
 
 ###############################
 ## GET AND RENDER THE TWEETS ##
@@ -110,19 +138,17 @@ draw.text((headerPadding, headerPadding), headerText, inky.WHITE, headerFont)
 startDraw = 0 # Sets a variable to track the vertical height of the drawn content
 
 for twitterUsername, twitterDisplayname in accounts.items():
-    print('Twitter handle: ', twitterUsername)
-    print('Display name: ', twitterDisplayname)
     def displayTweets(handle):
-        statuses = api.GetUserTimeline(screen_name=twitterUsername)
-        return statuses[0].text
+        statuses = api.GetUserTimeline(screen_name=handle)
+        return statuses[0].full_text
     if __name__ == "__main__":
-        latest_tweet = displayTweets(sys.argv[1] if len(sys.argv) > 1 else 0)
-        reflowed_latest_tweet = reflow_text(latest_tweet, inky.WIDTH, tweetFont)
+        latest_tweet = displayTweets(twitterUsername)
+        reflowed_latest_tweet = reflow_text(latest_tweet[0], displayWidth, tweetFont)
         startDraw = startDraw + headerHeight + headerPadding
-        draw.text((0, startDraw), twitterDisplayname, inky.YELLOW, accountFont)
+        draw.text((0, startDraw), twitterDisplayname, yellow, accountFont)
         accountTextWidth, accountTextHeight = accountFont.getsize(twitterDisplayname)
         startDraw = startDraw + accountTextHeight + (headerPadding / 2)
-        draw.text((0, startDraw), reflowed_latest_tweet, inky.BLACK, tweetFont)
+        draw.text((0, startDraw), reflowed_latest_tweet, black, tweetFont)
         tweetTextWidth, tweetTextHeight = accountFont.getsize(reflowed_latest_tweet)
         startDraw = startDraw + tweetTextHeight + accountTextHeight + (headerPadding * 4)
 
@@ -137,7 +163,7 @@ now = datetime.datetime.now()
 tweet_update = "Updated: " + now.strftime("%d %b %H:%M")
 
 updateTextWidth, updateTextHeight = accountFont.getsize(tweet_update)
-draw.text(((inky.WIDTH - updateTextWidth), (headerHeight - updateTextHeight)), tweet_update, inky.WHITE, updateFont)
+draw.text(((displayWidth - updateTextWidth), (headerHeight - updateTextHeight)), tweet_update, white, updateFont)
 
 ########################
 ## FINALISE THE IMAGE ##
@@ -154,11 +180,14 @@ inky.set_image(img)
 # .set_border(colour) sets the colour at the edge of the display
 # colour should be one of 'inky.RED', 'inky.YELLOW', 'inky.WHITE' or 'inky.BLACK' with available colours depending on your display type.
 
-inky.set_border(inky.WHITE)
+inky.set_border(white)
 
 ########################
 ## UPDATE THE DISPLAY ##
 ########################
 # Once you've prepared and set your image, and chosen a border colour, you can update your e-ink display with .show()
 
-inky.show()
+if test == True:
+    img.save("debug.png")
+else:
+    inky.show()
