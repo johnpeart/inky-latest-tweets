@@ -2,6 +2,8 @@
 
 This app displays tweets on an e-ink display attached to a Raspberry Pi.
 
+I made this to start to learn how to work with Python and the Inky wHAT display.
+
 ## Pre-requisites
 
 ### Hardware
@@ -31,8 +33,12 @@ Your display should update to look something like this:
 
 ![](https://github.com/johnpeart/inky-twitter/blob/master/screenshot.jpg)
 
+## Things to do
+
+1. This will run just once; you'd need to set up a way for this to run on its own, probably with something like a cron job.
+
 ## Credits
 
 Inspired by Adam Bowie's [Twitter feeds display](https://www.adambowie.com/blog/2019/09/news-twitter-feeds-and-inky-what-e-ink-display/).
 
-Fonts are open sourced and from [iA Writer](https://github.com/iaolo/iA-Fonts)
+Fonts are open sourced and from [iA Writer](https://github.com/iaolo/iA-Fonts).
